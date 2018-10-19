@@ -10,15 +10,15 @@ class WordSentiment:
 
 
 class WordScore:
-    def __init__(self, word, pos, sentiment):
+    def __init__(self, word, pos, word_sentiment=WordSentiment):
         self.word = word
         self.pos = pos
-        self.sentiment = sentiment
+        self.word_sentiment = word_sentiment
 
     def calculate(self):
         score = 0
         if cmp(self.pos, 'JJ') is 0:
-            if cmp(self.sentiment.__dict__['sentiment'], 'positive') is 0:
+            if cmp(self.word_sentiment.sentiment, 'positive') is 0:
                 score = score + 1
             else:
                 score = score - 1
