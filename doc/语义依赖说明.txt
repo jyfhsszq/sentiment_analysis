@@ -1,0 +1,262 @@
+LTP语义依赖关系说明
+
+中文语法分析是目前的自然语言处理的主要任务之一，语义依赖分析是目前实施中文语法分析的主要理论技术，开源的工具则主要有stanford parser和哈工大的语音云LTP。
+LTP语义依赖关系说明
+
+附：LTP依存分析模块所使用的依存关系标记含义 (http://ir.hit.edu.cn/demo/ltp)
+依存关系标记（共24个）
+定中关系ATT（attribute）
+数量关系QUN（quantity）
+并列关系COO（coordinate）
+同位关系APP（appositive）
+前附加关系LAD（left adjunct）
+后附加关系RAD（right adjunct）
+动宾关系VOB（verb-object）
+介宾关系POB（preposition-object）
+主谓关系SBV（subject-verb）
+比拟关系SIM（similarity）
+核心HED（head）
+连动结构VV（verb-verb）
+关联结构CNJ（conjunctive）
+语态结构MT（mood-tense）
+独立结构IS（independent structure）
+状中结构ADV（adverbial）
+动补结构CMP（complement）
+“的”字结构DE
+“地”字结构DI
+“得”字结构DEI
+“把”字结构BA
+“被”字结构BEI
+独立分句IC（independent clause）
+依存分句DC（dependent clause）
+stanford语义依赖关系说明
+
+CoreNLP中的依存关系有50来种（都是二元的关系），下面总结：
+
+    acomp: adjectival complement
+    用于动词的形容词补语。
+    动词–>形容词
+    “She looks very beautiful.” acomp(looks,beautiful)
+
+    advcl: adverbial clause modifier
+    修饰动词的状语从句。
+    主句中的动词–>从句中的主要成分
+    “The accident happened as the night was falling” advcl(happened, falling)
+
+    advmod: adverb modifier
+    （非从句）的副词。
+    被修饰者–>副词
+    “Genetically modified food” advmod(modified, genetically)
+
+    agent: agent
+    用于补充过去时态的动词，通常跟着介词“by”。
+    过去时态的动词–>补充的名词
+    “The man has been killed by the police” agent(killed, police)
+
+    amod: adjectival modifier
+    修饰名词短语的形容修饰语。
+    名词短语–>形容修饰语
+    “Sam eats red meat” amod(meat, red)
+
+    appos: appostional modifier
+    修饰名词短语的名词短语（通常紧挨着）
+    被修饰的名词短语–>名词短语
+    “Bill ( John ’s cousin ) ” appos(Bill, cousin)
+
+    aux: auxiliary
+    助动词
+    动词–>助动词
+    “Reagan has died ”aux(died, has)
+
+    auxpass: passive auxiliary
+    过去式的助动词
+    动词–>过去式的助动词
+    “Kennedy has been killed” auxpass(killed, been)
+
+    cc: coordination
+    第一个并列词–> 协同关系词
+    “Bill is big and honest” cc(big, and)
+
+    ccomp: clausal complement
+    被补充说明的词–>补语从句的主要成分（决定语义的词）
+    “He says that you like to swim” ccomp(says, like)
+
+    conj: conjunct
+    用协同连词（and、or）连接的两个元素
+    第一个元素–>第二个元素
+    “Bill is big and honest” conj(big, honest)
+
+    cop: copula
+    系动词
+    表语–>系动词
+    “Bill is big” cop(big, is)
+
+    csubj: clausual subject
+    主语从句
+    谓语动词–>主语从句中的主要成分
+    “What she said makes sense” csubj(makes, said)
+
+    csubjpass: clausal passive subject
+    主从被动关系
+    谓语动词（被动）–>主语从句中的主要成分
+    “That she lied was suspected by everyone” csubjpass(suspected, lied)
+
+    dep: dependent
+    系统无法识别的依赖关系
+    “Then, as if to show that he could, … ” dep(show, if)
+
+    det: determiner
+    限定词
+    名词短语–>限定词
+    “The man is here” det(man, the)
+
+    discourse: discourse element
+    句子主要部分–>感叹词、语气词
+    “Iguazu is in Argentina :) ” discourse(is, :))
+
+    dobj: direct object
+    动词（给予）–>直接宾语
+    “She gave me a raise” dobj(gave, raise)
+
+    expl: expletive
+    从句的主要动词–>there
+    “There is a ghost in the room” expl(is, There)
+
+    goeswith: goes with
+    两个本来应该连在一起的词
+    第二部分–>第一部分
+    They come here with out legal permission gosewith(out, with)
+
+    iobj: indirect object
+    动词（给予）–>间接宾语
+    “She gave me a raise” iobj(gave, me)
+
+    mark: marker
+    从句的主要成分–>从句修饰的主体（标记语）
+    ”He says that you like to swim“ marker(swim,that)
+
+    mwe: multi-word expression
+    固定搭配
+    “I like dogs as well as cats” mwe(well, as)
+
+    neg: negation modifier
+    否定修饰
+    被修饰词–>否定词
+    “Bill is not a scientist” neg(scientist, not)
+
+    nn: noun compound modifier
+    名词合成修饰
+    “Oil price futures” nn(futures, oil) nn(futures, price)
+
+    npadvmod: noun phrase as adverbial modifier
+    名词短语作为副词修饰
+    副词修饰的词–>名词
+    “The director is 65 years old” npadvmod(old, years)
+
+    nsubj: nominal subject
+    名词性主语
+    句子的主要成分（一般是动词）–>主语
+    “Clinton defeated Dole” nsubj(defeated, Clinton)
+
+    nsubjpass: passive nominal subject
+    被动的名词主语
+    句子的主要成分–>主语（被动）
+    “Dole was defeated by Clinton” nsubjpass(defeated, Dole)
+
+    num: numeric modifier
+    数词
+    名词–>数量
+    “Sam ate 3 sheep” num(sheep, 3)
+
+    number: element of compound number
+    复合形式的数词
+    “I have four thousand sheep” number(thousand, four)
+
+    parataxis: parataxis
+    并列
+    主要动词–>并列句的主要成分
+    “The guy, John said, left early in the morning” parataxis(left, said)
+
+    pcomp: prepositional complement
+    介词的补语
+    介词–>从句的主要成分
+    “We have no information on whether users are at risk” pcomp(on, are)
+
+    pobj: object of a preposition
+    介词的宾语
+    介词–>宾语
+    “I sat on the chair” pobj(on, chair)
+
+    poss: possession modifier
+    所属修饰
+    拥有者–>拥有物品
+    “their offices” poss(offices, their)
+
+    possessive: possessive modifier
+    所属修饰
+    拥有者–>’s
+    “Bill’s clothes” possessive(Bill, ’s)
+
+    preconj: preconjunct
+    名词短语的前部–>连词前面出现的词（both、either、neither）
+    “Both the boys and the girls are here” preconj(boys, both)
+
+    predet: predeterminer
+    名词短语的前部–>在限定词前面出现的词
+    “All the boys are here” predet(boys, all)
+
+    prep: prepositional modifier
+    介词修饰
+    名词–>介词
+    “I saw a cat in a hat” prep(cat, in)
+
+    prepc: prepositional clausal modifier
+    介词从句修饰
+    主句主要词–>从句主要词
+    “He purchased it without paying a premium” prepc without(purchased, paying)
+
+    prt: phrasal verb particle
+    动词短语
+    “They shut down the station” prt(shut, down)
+
+    punct: punctuation
+    标点
+    “Go home!” punct(Go, !)
+
+    quantmod: quantifier phrase modifier
+    数量短语
+    数量–>数量修饰
+    “About 200 people came to the party” quantmod(200, About)
+
+    rcmod: relative clause modifier
+    关系从句修饰
+    名词短语的第一个词–>关系动词的主要词
+    “I saw the man you love” rcmod(man, love)
+
+    ref: referent
+    指代关系
+    被指代词–>指代词
+    “I saw the book which you bought” ref (book, which)
+
+    root: root
+    根节点
+    “I love French fries.” root(ROOT, love)
+
+    tmod: temporal modifier
+    时间修饰
+    句子主要词（通常是动词）–>时间词
+    “Last night, I swam in the pool” tmod(swam, night)
+
+    vmod: reduced non-finite verbal modifier
+    非谓语动词（to do）修饰
+    修饰对象–>非谓语动词
+    “Points to establish are … ” vmod(points, establish)
+
+    xcomp: open clausal complement
+    开放从句（缺少主语的从句）补语
+    开放从句的补足对象（动词）–>开放从句的动词
+    “He says that you like to swim” xcomp(like, swim)
+
+    xsubj: controlling subject
+    开放从句的动词–>实际控制对象（名词）
+    “Tom likes to eat fish” xsubj(eat, Tom)
