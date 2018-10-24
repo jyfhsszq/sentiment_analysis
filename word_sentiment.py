@@ -23,3 +23,5 @@ class WordScore:
             else:
                 score = score - 1
         return score
+
+
