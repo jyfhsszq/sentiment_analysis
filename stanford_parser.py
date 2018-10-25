@@ -23,11 +23,12 @@ nlp = StanfordCoreNLP(r'/Users/pauljing/virtualenv_nltk/standford_lib/stanford-c
 sentence = "The is a good book."
 
 # print nlp.word_tokenize(sentence)
-# print nlp.pos_tag(sentence)
+print nlp.pos_tag(sentence)
 print nlp.parse(sentence)
 print nlp.dependency_parse(sentence)
 
 f = open('data/dp_examples.txt')
 lines = f.readlines()
 for line in lines:
+    print nlp.pos_tag(line)
     print nlp.dependency_parse(line)
