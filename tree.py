@@ -79,6 +79,28 @@ class Tree(object):
                 for item in l:
                     self.broad_search(item, res)
 
+    def find_sub_tree(self, core_ids):
+        result = []
+
+        for i, core_id in enumerate(core_ids):
+            end = 999999990
+            if (i+1) < core_ids.__len__():
+                end = self.find_min_node(self.nodes[core_ids[i+1]], 999999999)-1
+            result.append((core_id, self.find_min_node(self.nodes[core_id], 99999999), end))
+
+        return result
+
+    def find_min_node(self, node, min_value):
+        #min_value = 999999999
+        if self.CHILDREN_KEY in node:
+            children = node[self.CHILDREN_KEY]
+            for child in children:
+                if(child[self.ID] < min_value):
+                    min_value = child[self.ID]
+                    return self.find_min_node(child, min_value)
+
+        return min_value
+
 
 
 if __name__ == '__main__':
@@ -95,3 +117,8 @@ if __name__ == '__main__':
     tree.broad_search(node, result)
     print [node[Tree.ID] for node in result]
     print result
+
+    min_value = 999999999
+    print tree.find_min_node(tree.nodes[16], min_value)
+
+    print tree.find_sub_tree([2, 12, 16])
