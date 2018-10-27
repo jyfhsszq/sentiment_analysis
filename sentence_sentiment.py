@@ -1,9 +1,13 @@
+#!/usr/bin/python
+# coding=utf-8
+
 import nltk
 import csv
 import json
 from nltk.parse.stanford import StanfordParser
 from stanfordcorenlp import StanfordCoreNLP
 from word_sentiment import WordSentiment,WordScore,SentimentUnit, SentenceScore
+from tree import Tree
 
 from nltk.corpus import opinion_lexicon
 
@@ -40,8 +44,8 @@ def word_tokenize():
     # print nltk.help.upenn_tagset('RB')
 
 
-def review_analyze(sentence, word_sentiment_dict, standford_nlp):
-    print "~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
+def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
+    print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
     print sentence
     words = nltk.word_tokenize(sentence)
 
@@ -53,39 +57,70 @@ def review_analyze(sentence, word_sentiment_dict, standford_nlp):
 
     dependency_list = standford_nlp.dependency_parse(sentence)
     print dependency_list
+    tree = Tree(dependency_list)
     nsubj_list = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'nsubj') is 0]
     amod_list  = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'amod') is 0]
     conj_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'conj') is 0]
+    cop_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'cop') is 0]
+    ccomp_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'ccomp') is 0]
+    advmod_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'advmod') is 0]
     sentiment_unit_list = []
 
     # for nsubj
     if nsubj_list:
-        # for nsubj + amod
-        for amod in amod_list:
-            sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
+        # for cop: 系动词
+        if cop_list:
+            # for nsubj + amod
+            for amod in amod_list:
+                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
 
-        for conj in conj_list:
-            governor1 = find_governor(words, conj)
-            dependent1 = find_dependent(words, conj)
-            if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
-                sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
-                sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
-                print governor1
+            for conj in conj_list:
+                governor1 = find_governor(words, conj)
+                dependent1 = find_dependent(words, conj)
+                if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
+                    sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
+                    sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
+                    print governor1
 
-    print SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
+            for ccomp in ccomp_list:
+                sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
+        # 动词 + advmod
+        elif advmod_list:
+            for advmod in advmod_list:
+                v_number = advmod[1] # 动词
+                core_word_node = tree.nodes[v_number]
+                result = []
+                tree.broad_search(core_word_node, result)
+                adv_words = [words[node[Tree.ID]-1] for node in result]
+                sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
+
+        elif amod_list:
+            for amod in amod_list:
+                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
 
 
-def file_analyze():
+    return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
+
+
+def review_analyze():
     word_sentiment_dict = find_word_sentiment_dict()
     # eng_parser = StanfordParser(model_path=u'edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz')
     standford_nlp = StanfordCoreNLP(r'/Users/pauljing/virtualenv_nltk/standford_lib/stanford-corenlp-full-2018-10-05',
                                     lang='en')
+    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
-    f = open('data/dp_examples.txt')
+    #f = open('data/dp_examples.txt')
+    f = open('data/one.txt')
     lines = f.readlines()
     for line in lines:
-        review_analyze(line, word_sentiment_dict, standford_nlp)
-
+        print "####################  Start to Analyze  ####################"
+        score = 0
+        sentences = tokenizer.tokenize(line)
+        for sentence in sentences:
+            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp)
+            print sentence_core
+            score = score + sentence_core
+        print score
 
 def find_dependent(words, relation):
     #governor = words[dependency_relation[1] - 1]
@@ -109,4 +144,4 @@ def build_sentiment_unit(amod_relation, words, dependency_list):
     adv_list = find_adv_list(amod_relation[2], words, dependency_list)
     return SentimentUnit('', dependent, adv_list)
 
-if __name__ == '__main__': file_analyze()
+if __name__ == '__main__': review_analyze()
