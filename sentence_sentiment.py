@@ -8,6 +8,7 @@ from nltk.parse.stanford import StanfordParser
 from stanfordcorenlp import StanfordCoreNLP
 from word_sentiment import WordSentiment,WordScore,SentimentUnit, SentenceScore
 from tree import Tree
+from nsubj_parser import NsubjParser
 
 from nltk.corpus import opinion_lexicon
 
@@ -21,6 +22,7 @@ def find_word_sentiment_dict():
             word_sentiment_obj = WordSentiment(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
             word_sentiment_dict[word_sentiment_obj.word] = word_sentiment_obj
     return word_sentiment_dict
+
 
 def word_tokenize():
     word_sentiment_dict = find_word_sentiment_dict
@@ -58,45 +60,59 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
     dependency_list = standford_nlp.dependency_parse(sentence)
     print dependency_list
     tree = Tree(dependency_list)
-    nsubj_list = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'nsubj') is 0]
-    amod_list  = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'amod') is 0]
-    conj_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'conj') is 0]
-    cop_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'cop') is 0]
-    ccomp_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'ccomp') is 0]
-    advmod_list  =  [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'advmod') is 0]
+    raw_nsubj_list = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'nsubj') is 0]
+    nsubj_list = remove_dup_nsubj(raw_nsubj_list)
+
+    #amod_list  = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'amod') is 0]
     sentiment_unit_list = []
 
     # for nsubj
     if nsubj_list:
-        # for cop: 系动词
-        if cop_list:
-            # for nsubj + amod
-            for amod in amod_list:
-                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
+        # [(2, 1, 2), (12, 3, 13)]
+        sub_tree_list = tree.find_sub_tree_by_nsubj(nsubj_list)
+        for sub_tree in sub_tree_list:
+            start = sub_tree[1]
+            end = sub_tree[2]
+            amod_list = find_relations_by_scope(dependency_list, 'amod', start, end)
+            conj_list = find_relations_by_scope(dependency_list, 'conj', start, end)
+            cop_list = find_relations_by_scope(dependency_list, 'cop', start, end)
+            ccomp_list = find_relations_by_scope(dependency_list, 'ccomp', start, end)
+            advmod_list = find_relations_by_scope(dependency_list, 'advmod', start, end)
 
-            for conj in conj_list:
-                governor1 = find_governor(words, conj)
-                dependent1 = find_dependent(words, conj)
-                if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
-                    sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
-                    sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
-                    print governor1
+            nsubjParser = NsubjParser(tree, words, tags)
+            s_list = []
+            nsubjParser.parse(sub_tree[0],s_list)
+            print s_list
 
-            for ccomp in ccomp_list:
-                sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
-        # 动词 + advmod
-        elif advmod_list:
-            for advmod in advmod_list:
-                v_number = advmod[1] # 动词
-                core_word_node = tree.nodes[v_number]
-                result = []
-                tree.broad_search(core_word_node, result)
-                adv_words = [words[node[Tree.ID]-1] for node in result]
-                sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
+            # for cop: 系动词
+            if cop_list:
+                # for nsubj + amod
+                for amod in amod_list:
+                    sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
 
-        elif amod_list:
-            for amod in amod_list:
-                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
+                for conj in conj_list:
+                    governor1 = find_governor(words, conj)
+                    dependent1 = find_dependent(words, conj)
+                    if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
+                        sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
+                        sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
+                        print governor1
+
+                for ccomp in ccomp_list:
+                    sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
+            # 动词 + advmod
+            elif advmod_list:
+                for advmod in advmod_list:
+                    v_number = advmod[1] # 动词
+                    core_word_node = tree.nodes[v_number]
+                    result = []
+                    tree.broad_search(core_word_node, result)
+                    adv_words = [words[node[Tree.ID]-1] for node in result]
+                    sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
+
+            elif amod_list:
+                for amod in amod_list:
+                    sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
 
 
     return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
@@ -139,9 +155,30 @@ def find_adv_list(adj_num, words, dependency_list):
     return [find_dependent(words, (x, y, z)) for (x, y, z) in dependency_list if cmp(x, 'advmod') is 0 and y is adj_num]
 
 
+def find_relations_by_scope(dependency_list, rel, start, end):
+    return [(x, y, z) for (x, y, z) in dependency_list if cmp(x, rel) is 0 and end >= y >= start and end > z >= start]
+
+
 def build_sentiment_unit(amod_relation, words, dependency_list):
     dependent = find_dependent(words, amod_relation)
     adv_list = find_adv_list(amod_relation[2], words, dependency_list)
     return SentimentUnit('', dependent, adv_list)
+
+def remove_dup_nsubj(raw_nsubj_list):
+    dict = {}
+    for raw_nsubj in raw_nsubj_list:
+        gov = raw_nsubj[1]
+        dep = raw_nsubj[2]
+        distance = abs(gov-dep)
+        if gov not in dict:
+            dict[gov] = (0, distance)
+        else:
+            old_count = dict[gov][0]
+            old_distance = dict[gov][1]
+            if old_distance < distance:
+                distance = old_distance
+            dict[gov] = (old_count + 1, distance)
+
+    return [(x, y, z) for (x, y, z) in raw_nsubj_list if (y - z) is dict[y][1]]
 
 if __name__ == '__main__': review_analyze()

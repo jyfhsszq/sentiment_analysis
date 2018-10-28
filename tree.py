@@ -9,6 +9,7 @@ class Tree(object):
     ID = 'id'
     CHILDREN_KEY = 'children'
     RELATION_KEY = 'relation'
+    MAX_INT = 999999999
 
     def __init__(self, nodelist):
         forest = []
@@ -16,25 +17,25 @@ class Tree(object):
 
         for relation, node_id, child_id in nodelist:
             #create current node if necessary
-            if not node_id in self.nodes:
+            if node_id not in self.nodes:
                 node = { self.ID : node_id}
                 self.nodes[node_id] = node
             else:
                 node = self.nodes[node_id]
 
             if node_id == 0:
-                #add node to forest
+                # add node to forest
                 forest.append( node )
 
-            #create parent node if necessary
-            if not child_id in self.nodes:
+            # create parent node if necessary
+            if child_id not in self.nodes:
                 child = { self.ID : child_id, self.RELATION_KEY : relation}
                 self.nodes[child_id] = child
             else:
                 child = self.nodes[child_id]
                 child[self.RELATION_KEY] = relation
-            #create children if necessary
-            if not self.CHILDREN_KEY in node:
+            # create children if necessary
+            if self.CHILDREN_KEY not in node:
                 node[self.CHILDREN_KEY] = []
             #add node to children of parent
             node[self.CHILDREN_KEY].append(child)
@@ -79,16 +80,28 @@ class Tree(object):
                 for item in l:
                     self.broad_search(item, res)
 
+    '''
+    :param nsubj relaton core words Id
+    :return [(core node id, sub tree scope->min node Id, sub tree scope->max node Id), ...]
+             example: [(2, 1, 2), (12, 3, 13)]
+    '''
     def find_sub_tree(self, core_ids):
-        result = []
+        sub_tree_node_list = []
 
         for i, core_id in enumerate(core_ids):
-            end = 999999990
+            end = Tree.MAX_INT
             if (i+1) < core_ids.__len__():
-                end = self.find_min_node(self.nodes[core_ids[i+1]], 999999999)-1
-            result.append((core_id, self.find_min_node(self.nodes[core_id], 99999999), end))
+                end = self.find_min_node(self.nodes[core_ids[i+1]], Tree.MAX_INT)-1
+                sub_tree_node_list.append((core_id, self.find_min_node(self.nodes[core_id], Tree.MAX_INT), end))
+            else:
+                sub_tree_node_list.append((core_id, self.find_min_node(self.nodes[core_id], Tree.MAX_INT), end))
+        return sub_tree_node_list
 
-        return result
+
+    def find_sub_tree_by_nsubj(self, nsubj_list):
+        nsubj_governor_list = [y for (x, y, z) in nsubj_list]
+        return self.find_sub_tree(nsubj_governor_list)
+
 
     def find_min_node(self, node, min_value):
         #min_value = 999999999
@@ -118,7 +131,9 @@ if __name__ == '__main__':
     print [node[Tree.ID] for node in result]
     print result
 
-    min_value = 999999999
-    print tree.find_min_node(tree.nodes[16], min_value)
+    min_value = Tree.MAX_INT
+    print tree.find_min_node(tree.nodes[12], min_value)
 
     print tree.find_sub_tree([2, 12, 16])
+
+    print tree.find_sub_tree_by_nsubj([(u'nsubj', 2, 1),(u'nsubj', 12, 4),(u'nsubj', 12, 10),(u'nsubj', 18, 17)])
