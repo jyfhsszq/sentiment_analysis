@@ -16,24 +16,25 @@ class NsubjParser(object):
 
     def parse_verb(self, verb, result=[]):
         v_node = self.tree.nodes[verb]
-        children = v_node[self.CHILDREN_KEY]
+        children = v_node[Tree.CHILDREN_KEY]
         for child in children:
-            id = child[Tree.ID];
+            id = child[Tree.ID]
             if(self.is_verb(id)):
                 self.parse_verb(id, result)
 
             if(self.is_adv(id)):
-                adv_list = []
+                adv_list = [id]
                 self.parse_adv(id, adv_list)
                 result.append(SentimentUnit(verb, '', adv_list))
 
     def parse_adv(self, adv, result=[]):
         adv_node = self.tree.nodes[adv]
-        children = adv_node[self.CHILDREN_KEY]
-        for child in children:
-            id = child[Tree.ID]
-            if self.is_adv(id):
-                self.parse_adv(id, result)
+        if Tree.CHILDREN_KEY in adv_node:
+            children = adv_node[Tree.CHILDREN_KEY]
+            for child in children:
+                id = child[Tree.ID]
+                if self.is_adv(id):
+                    self.parse_adv(id, result)
 
     def find_words_list(self, number_list):
         return [self.words[id] for id in number_list]
@@ -43,5 +44,5 @@ class NsubjParser(object):
         return tag.startswith('VB')
 
     def is_adv(self, node_id):
-        tag = self.words[node_id]
+        tag = self.tags[node_id-1][1]
         return tag.startswith('RB')
