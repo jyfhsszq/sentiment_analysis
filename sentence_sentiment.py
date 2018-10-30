@@ -49,13 +49,14 @@ def word_tokenize():
 def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
     print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
     print sentence
-    words = nltk.word_tokenize(sentence)
+    #words = nltk.word_tokenize(sentence)
 
     # part-of-speech tagging
     word_tag_dict = {}
     tags = standford_nlp.pos_tag(sentence)
     for tag in tags:
         word_tag_dict[tag[0]] = tag[1]
+    words = [tag[0] for tag in tags]
 
     dependency_list = standford_nlp.dependency_parse(sentence)
     print dependency_list
@@ -70,51 +71,54 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
     if nsubj_list:
         # [(2, 1, 2), (12, 3, 13)]
         sub_tree_list = tree.find_sub_tree_by_nsubj(nsubj_list)
-        for sub_tree in sub_tree_list:
-            start = sub_tree[1]
-            end = sub_tree[2]
-            '''
-            amod_list = find_relations_by_scope(dependency_list, 'amod', start, end)
-            conj_list = find_relations_by_scope(dependency_list, 'conj', start, end)
-            cop_list = find_relations_by_scope(dependency_list, 'cop', start, end)
-            ccomp_list = find_relations_by_scope(dependency_list, 'ccomp', start, end)
-            advmod_list = find_relations_by_scope(dependency_list, 'advmod', start, end)
-            '''
-            nsubjParser = NsubjParser(tree, words, tags)
-            nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
+    else:
+        sub_tree_list = [(dependency_list[0][2], 1, Tree.MAX_INT)]
+
+    for sub_tree in sub_tree_list:
+        start = sub_tree[1]
+        end = sub_tree[2]
+        '''
+        amod_list = find_relations_by_scope(dependency_list, 'amod', start, end)
+        conj_list = find_relations_by_scope(dependency_list, 'conj', start, end)
+        cop_list = find_relations_by_scope(dependency_list, 'cop', start, end)
+        ccomp_list = find_relations_by_scope(dependency_list, 'ccomp', start, end)
+        advmod_list = find_relations_by_scope(dependency_list, 'advmod', start, end)
+        '''
+        nsubjParser = NsubjParser(tree, words, tags)
+        nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
 
 
-            '''
-            # for cop: 系动词
-            if cop_list:
-                # for nsubj + amod
-                for amod in amod_list:
-                    sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
+        '''
+        # for cop: 系动词
+        if cop_list:
+            # for nsubj + amod
+            for amod in amod_list:
+                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
 
-                for conj in conj_list:
-                    governor1 = find_governor(words, conj)
-                    dependent1 = find_dependent(words, conj)
-                    if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
-                        sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
-                        sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
-                        print governor1
+            for conj in conj_list:
+                governor1 = find_governor(words, conj)
+                dependent1 = find_dependent(words, conj)
+                if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
+                    sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
+                    sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
+                    print governor1
 
-                for ccomp in ccomp_list:
-                    sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
-            # 动词 + advmod
-            elif advmod_list:
-                for advmod in advmod_list:
-                    v_number = advmod[1] # 动词
-                    core_word_node = tree.nodes[v_number]
-                    result = []
-                    tree.broad_search(core_word_node, result)
-                    adv_words = [words[node[Tree.ID]-1] for node in result]
-                    sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
+            for ccomp in ccomp_list:
+                sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
+        # 动词 + advmod
+        elif advmod_list:
+            for advmod in advmod_list:
+                v_number = advmod[1] # 动词
+                core_word_node = tree.nodes[v_number]
+                result = []
+                tree.broad_search(core_word_node, result)
+                adv_words = [words[node[Tree.ID]-1] for node in result]
+                sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
 
-            elif amod_list:
-                for amod in amod_list:
-                    sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
-            '''
+        elif amod_list:
+            for amod in amod_list:
+                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
+        '''
 
     return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
 

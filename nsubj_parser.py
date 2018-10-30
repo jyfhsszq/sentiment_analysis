@@ -10,9 +10,12 @@ class NsubjParser(object):
         self.words = words
         self.tags = tags
 
-    def parse(self, root, start, end, result=[]):
+    def parse(self, root, start, end, sentiment_result=[]):
         if self.is_verb(root):
-            self.parse_verb(root, start, end, result)
+            self.parse_verb(root, start, end, sentiment_result)
+
+        if self.is_noun(root):
+            self.parse_n(root, start, end, sentiment_result)
 
     def parse_verb(self, verb, start, end, result=[]):
         if verb < start or verb > end:
@@ -23,20 +26,23 @@ class NsubjParser(object):
             return
 
         children = v_node[Tree.CHILDREN_KEY]
+        adv_list = []
         for child in children:
             id = child[Tree.ID]
             if self.is_verb(id):
                 self.parse_verb(id, start, end, result)
 
             if self.is_adv(id):
-                adv_list = [self.words[id-1]]
+                adv_list.append([self.words[id-1]])
                 self.parse_adj_adv(id, start, end, adv_list)
-                result.append(SentimentUnit(self.words[verb-1], '', adv_list))
 
             if self.is_noun(id):
                 self.parse_n(id, start, end, result)
 
-    def parse_adj_adv(self, ad, start, end, result=[]):
+        result.append(SentimentUnit(self.words[verb - 1], '', adv_list))
+
+
+    def parse_adj_adv(self, ad, start, end, ad_result=[]):
         if ad < start or ad > end:
             return
 
@@ -47,7 +53,8 @@ class NsubjParser(object):
         for child in children:
             id = child[Tree.ID]
             if self.is_adv(id) or self.is_adj(id):
-                self.parse_adj_adv(id, start, end, result)
+                ad_result.append(id)
+                self.parse_adj_adv(id, start, end, ad_result)
 
     def parse_n(self, n, start, end, result=[]):
         if n < start or n > end:
@@ -57,19 +64,24 @@ class NsubjParser(object):
         if Tree.CHILDREN_KEY not in n_node:
             return
         children = n_node[Tree.CHILDREN_KEY]
+        adj = -1
+        adv_list = []
         for child in children:
             id = child[Tree.ID]
             if self.is_noun(id):
                 self.parse_n(id, start, end, result)
 
-            adj = -1
-            adv_list = []
             if self.is_adj(id):
                 adj = id
                 self.parse_adj_adv(id, start, end, adv_list)
 
-            if adj > 0 or adv_list.__len__() > 0:
-                result.append(SentimentUnit(self.words[n-1], self.words[adj-1], adv_list))
+            if self.is_verb(id) and child[Tree.RELATION_KEY] in ['acl']:
+                self.parse_verb(id, start, end, result)
+
+        if adj > 0:
+            result.append(SentimentUnit(self.words[n-1], self.words[adj-1], adv_list))
+        else:
+            result.append(SentimentUnit(self.words[n-1], '', adv_list))
 
     def find_words_list(self, number_list):
         return [self.words[id] for id in number_list]
