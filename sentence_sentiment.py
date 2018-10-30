@@ -73,17 +73,18 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
         for sub_tree in sub_tree_list:
             start = sub_tree[1]
             end = sub_tree[2]
+            '''
             amod_list = find_relations_by_scope(dependency_list, 'amod', start, end)
             conj_list = find_relations_by_scope(dependency_list, 'conj', start, end)
             cop_list = find_relations_by_scope(dependency_list, 'cop', start, end)
             ccomp_list = find_relations_by_scope(dependency_list, 'ccomp', start, end)
             advmod_list = find_relations_by_scope(dependency_list, 'advmod', start, end)
-
+            '''
             nsubjParser = NsubjParser(tree, words, tags)
-            s_list = []
-            nsubjParser.parse(sub_tree[0],s_list)
-            print s_list
+            nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
 
+
+            '''
             # for cop: 系动词
             if cop_list:
                 # for nsubj + amod
@@ -113,7 +114,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
             elif amod_list:
                 for amod in amod_list:
                     sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
-
+            '''
 
     return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
 

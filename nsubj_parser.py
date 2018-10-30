@@ -10,27 +10,36 @@ class NsubjParser(object):
         self.words = words
         self.tags = tags
 
-    def parse(self, root, result=[]):
+    def parse(self, root, start, end, result=[]):
         if self.is_verb(root):
-            self.parse_verb(root, result)
+            self.parse_verb(root, start, end, result)
 
-    def parse_verb(self, verb, result=[]):
+    def parse_verb(self, verb, start, end, result=[]):
+        if verb < start or verb > end:
+            return
+
         v_node = self.tree.nodes[verb]
+        if Tree.CHILDREN_KEY not in v_node:
+            return
+
         children = v_node[Tree.CHILDREN_KEY]
         for child in children:
             id = child[Tree.ID]
             if self.is_verb(id):
-                self.parse_verb(id, result)
+                self.parse_verb(id, start, end, result)
 
             if self.is_adv(id):
-                adv_list = [id]
-                self.parse_adj_adv(id, adv_list)
-                result.append(SentimentUnit(verb, '', adv_list))
+                adv_list = [self.words[id-1]]
+                self.parse_adj_adv(id, start, end, adv_list)
+                result.append(SentimentUnit(self.words[verb-1], '', adv_list))
 
             if self.is_noun(id):
-                self.parse_n(id, result)
+                self.parse_n(id, start, end, result)
 
-    def parse_adj_adv(self, ad, result=[]):
+    def parse_adj_adv(self, ad, start, end, result=[]):
+        if ad < start or ad > end:
+            return
+
         ad_node = self.tree.nodes[ad]
         if Tree.CHILDREN_KEY not in ad_node:
             return
@@ -38,9 +47,12 @@ class NsubjParser(object):
         for child in children:
             id = child[Tree.ID]
             if self.is_adv(id) or self.is_adj(id):
-                self.parse_adj_adv(id, result)
+                self.parse_adj_adv(id, start, end, result)
 
-    def parse_n(self, n, result=[]):
+    def parse_n(self, n, start, end, result=[]):
+        if n < start or n > end:
+            return
+
         n_node = self.tree.nodes[n]
         if Tree.CHILDREN_KEY not in n_node:
             return
@@ -48,16 +60,16 @@ class NsubjParser(object):
         for child in children:
             id = child[Tree.ID]
             if self.is_noun(id):
-                self.parse_n(id, result)
+                self.parse_n(id, start, end, result)
 
             adj = -1
             adv_list = []
             if self.is_adj(id):
                 adj = id
-                self.parse_adj_adv(id, adv_list)
+                self.parse_adj_adv(id, start, end, adv_list)
 
             if adj > 0 or adv_list.__len__() > 0:
-               result.append(SentimentUnit(n, adj, adv_list))
+                result.append(SentimentUnit(self.words[n-1], self.words[adj-1], adv_list))
 
     def find_words_list(self, number_list):
         return [self.words[id] for id in number_list]

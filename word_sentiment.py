@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# coding=utf-8
+
 class WordSentiment:
     def __init__(self, word, emotion, color, orientation, sentiment, subjectivity, source):
         self.word = word
@@ -47,24 +50,39 @@ class WordScore:
 
 
 class SentimentUnit:
-    def __init__(self, n, adj, advs):
-        self.n = n
+    '''
+    :param core. 名词或者动词
+    '''
+    def __init__(self, core, adj, advs):
+        self.core = core
         self.adj = adj
         self.advs = advs
 
+    '''
+    被修饰词有可能是名次，也可能是动词。
+    每个情感单元的情感度等于被修饰词的情感度和形容词的情感度之和，乘以特征词的权重，然后再乘以副词对语气的增强度。
+    其中，距离被修饰词近的副词将对语气的增强度更强，距离被修饰词远的副词将对语气的增强度较弱，
+    所以，修饰词离被修饰词的远近是衡量情感度的关键一个因素。
+    公式：unit_sentiment = [S(word) + S(adj)] * feature_word_weight * Sum(E(adv)/distance)
+    如果被修饰词没有情感度，就取形容词的情感度。如果形容词也没有情感度，则这个情感单元的情感度为零。
+    '''
     def calculate(self, word_sentiment_dict):
-        word_sentiment = word_sentiment_dict.get(self.adj)
-        if not word_sentiment:
-            word_sentiment = word_sentiment_dict.get(self.n)
-
+        core_word_sentiment = word_sentiment_dict.get(self.core)
+        adj_word_sentiment = word_sentiment_dict.get(self.adj)
         score = 0
-        if word_sentiment:
-            score = score + word_sentiment.score_increment()
+        if core_word_sentiment:
+            score = score + core_word_sentiment.score_increment()
 
-            for adv in self.advs:
-                adv_sentiment = word_sentiment_dict.get(adv)
-                if adv_sentiment:
-                    score = score * adv_sentiment.enhancement_rate()
+        if adj_word_sentiment:
+            score = score + adj_word_sentiment.score_increment()
+
+        if score is 0:
+            return 0
+
+        for adv in self.advs:
+            adv_sentiment = word_sentiment_dict.get(adv)
+            if adv_sentiment:
+                score = score * adv_sentiment.enhancement_rate()
 
         return score
 
