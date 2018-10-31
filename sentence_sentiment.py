@@ -77,48 +77,8 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
     for sub_tree in sub_tree_list:
         start = sub_tree[1]
         end = sub_tree[2]
-        '''
-        amod_list = find_relations_by_scope(dependency_list, 'amod', start, end)
-        conj_list = find_relations_by_scope(dependency_list, 'conj', start, end)
-        cop_list = find_relations_by_scope(dependency_list, 'cop', start, end)
-        ccomp_list = find_relations_by_scope(dependency_list, 'ccomp', start, end)
-        advmod_list = find_relations_by_scope(dependency_list, 'advmod', start, end)
-        '''
         nsubjParser = NsubjParser(tree, words, tags)
         nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
-
-
-        '''
-        # for cop: 系动词
-        if cop_list:
-            # for nsubj + amod
-            for amod in amod_list:
-                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
-
-            for conj in conj_list:
-                governor1 = find_governor(words, conj)
-                dependent1 = find_dependent(words, conj)
-                if is_adj(governor1, word_tag_dict) and is_adj(dependent1, word_tag_dict):
-                    sentiment_unit_list.append(SentimentUnit('', governor1, find_adv_list(conj[1], words, dependency_list)))
-                    sentiment_unit_list.append(SentimentUnit('', dependent1, find_adv_list(conj[2], words, dependency_list)))
-                    print governor1
-
-            for ccomp in ccomp_list:
-                sentiment_unit_list.append(build_sentiment_unit(ccomp, words, dependency_list))
-        # 动词 + advmod
-        elif advmod_list:
-            for advmod in advmod_list:
-                v_number = advmod[1] # 动词
-                core_word_node = tree.nodes[v_number]
-                result = []
-                tree.broad_search(core_word_node, result)
-                adv_words = [words[node[Tree.ID]-1] for node in result]
-                sentiment_unit_list.append(SentimentUnit(find_governor(words, advmod), '', adv_words))
-
-        elif amod_list:
-            for amod in amod_list:
-                sentiment_unit_list.append(build_sentiment_unit(amod, words, dependency_list))
-        '''
 
     return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
 
@@ -135,13 +95,13 @@ def review_analyze():
     lines = f.readlines()
     for line in lines:
         print "####################  Start to Analyze  ####################"
-        score = 0
+        review_score = 0
         sentences = tokenizer.tokenize(line)
         for sentence in sentences:
             sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp)
-            print sentence_core
-            score = score + sentence_core
-        print score
+            print 'sentence_core: %s' % sentence_core
+            review_score = review_score + sentence_core
+        print 'review_score: %s' % review_score
 
 def find_dependent(words, relation):
     #governor = words[dependency_relation[1] - 1]

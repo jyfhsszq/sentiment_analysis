@@ -54,8 +54,8 @@ class SentimentUnit:
     :param core. 名词或者动词
     '''
     def __init__(self, core, adj, advs):
-        self.core = core
-        self.adj = adj
+        self.core = str(core).lower()
+        self.adj = str(adj).lower()
         self.advs = advs
 
     '''
@@ -80,7 +80,7 @@ class SentimentUnit:
             return 0
 
         for adv in self.advs:
-            adv_sentiment = word_sentiment_dict.get(adv)
+            adv_sentiment = word_sentiment_dict.get(str(adv).lower())
             if adv_sentiment:
                 score = score * adv_sentiment.enhancement_rate()
 

@@ -17,6 +17,9 @@ class NsubjParser(object):
         if self.is_noun(root):
             self.parse_n(root, start, end, sentiment_result)
 
+        if self.is_adj(root):
+            self.parse_adj_as_core(root, start, end, sentiment_result)
+
     def parse_verb(self, verb, start, end, result=[]):
         if verb < start or verb > end:
             return
@@ -33,13 +36,39 @@ class NsubjParser(object):
                 self.parse_verb(id, start, end, result)
 
             if self.is_adv(id):
-                adv_list.append([self.words[id-1]])
+                adv_list.append(self.words[id-1])
                 self.parse_adj_adv(id, start, end, adv_list)
 
             if self.is_noun(id):
                 self.parse_n(id, start, end, result)
 
+            # verb + adj. like: feel worth
+            if self.is_adj(id):
+                self.parse_adj_as_core(id, start, end, result)
+
         result.append(SentimentUnit(self.words[verb - 1], '', adv_list))
+
+    def parse_adj_as_core(self, adj, start, end, result=[]):
+        if adj < start or adj > end:
+            return
+
+        adj_node = self.tree.nodes[adj]
+        if Tree.CHILDREN_KEY not in adj_node:
+            result.append(SentimentUnit(self.words[adj - 1], '', ''))
+            return
+
+        children = adj_node[Tree.CHILDREN_KEY]
+        adv_list = []
+        for child in children:
+            id = child[Tree.ID]
+            if self.is_adv(id):
+                adv_list.append(self.words[id-1])
+                self.parse_adj_adv(id, start, end, adv_list)
+
+            if self.is_adj(id):
+                self.parse_adj_as_core(id, start, end, result)
+
+        result.append(SentimentUnit(self.words[adj - 1], '', adv_list))
 
 
     def parse_adj_adv(self, ad, start, end, ad_result=[]):
@@ -53,7 +82,7 @@ class NsubjParser(object):
         for child in children:
             id = child[Tree.ID]
             if self.is_adv(id) or self.is_adj(id):
-                ad_result.append(id)
+                ad_result.append(self.words[id-1])
                 self.parse_adj_adv(id, start, end, ad_result)
 
     def parse_n(self, n, start, end, result=[]):
