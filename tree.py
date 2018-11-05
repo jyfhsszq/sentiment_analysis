@@ -104,7 +104,6 @@ class Tree(object):
 
 
     def find_min_node(self, node, min_value):
-        #min_value = 999999999
         if self.CHILDREN_KEY in node:
             children = node[self.CHILDREN_KEY]
             for child in children:

@@ -14,7 +14,7 @@ SELECT count(*) as cnt FROM reviews.words
 where name in ('book', 'movie', 'cd', 'album', 'product', 'film', 'music', 'game', 'song', 'video')
 group by name order by cnt desc
 
-SELECT name, count(*) as cnt, count(*)/2438634 as percent FROM reviews.words 
+SELECT name, count(*) as cnt, 1+count(*)/2438634 as percent FROM reviews.words 
 where name in ('book', 'movie', 'cd', 'album', 'product', 'film', 'music', 'game', 'song', 'video')
 group by name order by cnt desc
 
@@ -30,7 +30,7 @@ attribute level: story, way, quality, money, life, thing, price, author, version
 band item voice picture size person player color brand level age volumn seller photo audio 'sound'
 rice
 SELECT name, count(*) as cnt, 1+count(*)/440284 as percent FROM reviews.words 
-where name in ('quality', 'price', 'size', 'level', 'brand', 'picture', 'sound', 'band')
+where name in ('quality', 'price', 'size', 'level', 'brand', 'picture', 'sound', 'band','person','player',' color','brand','level','age',' volumn','seller','photo','audio')
 group by name order by cnt desc
 
 service level: service time logistics delivery suport respnse

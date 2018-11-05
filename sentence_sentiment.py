@@ -71,6 +71,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
     if nsubj_list:
         # [(2, 1, 2), (12, 3, 13)]
         sub_tree_list = tree.find_sub_tree_by_nsubj(nsubj_list)
+        print sub_tree_list
     else:
         sub_tree_list = [(dependency_list[0][2], 1, Tree.MAX_INT)]
 
@@ -79,6 +80,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
         end = sub_tree[2]
         nsubjParser = NsubjParser(tree, words, tags)
         nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
+
 
     return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
 
