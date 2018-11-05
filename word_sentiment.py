@@ -66,12 +66,20 @@ class SentimentUnit:
     公式：unit_sentiment = [S(word) + S(adj)] * feature_word_weight * Sum(E(adv)/distance)
     如果被修饰词没有情感度，就取形容词的情感度。如果形容词也没有情感度，则这个情感单元的情感度为零。
     '''
-    def calculate(self, word_sentiment_dict):
-        core_word_sentiment = word_sentiment_dict.get(self.core)
-        adj_word_sentiment = word_sentiment_dict.get(self.adj)
+    def calculate(self, words, word_sentiment_dict, weights):
+        core_word = str(words[self.core]).lower()
+        core_weight = 1
+        if core_word and core_word in weights:
+            core_weight = weights[core_word]
+            print "core_weight" + core_weight
+
+        adj_word = str(words[self.adj]).lower()
+
+        core_word_sentiment = word_sentiment_dict.get(core_word)
+        adj_word_sentiment = word_sentiment_dict.get(adj_word)
         score = 0
         if core_word_sentiment:
-            score = score + core_word_sentiment.score_increment()
+            score = score + core_word_sentiment.score_increment() * core_weight
 
         if adj_word_sentiment:
             score = score + adj_word_sentiment.score_increment()
@@ -80,7 +88,8 @@ class SentimentUnit:
             return 0
 
         for adv in self.advs:
-            adv_sentiment = word_sentiment_dict.get(str(adv).lower())
+            adv_word = str(words[adv]).lower()
+            adv_sentiment = word_sentiment_dict.get(adv_word)
             if adv_sentiment:
                 score = score * adv_sentiment.enhancement_rate()
 
@@ -91,8 +100,8 @@ class SentenceScore:
     def __init__(self, sentiment_unit_list=[]):
         self.sentiment_unit_list = sentiment_unit_list
 
-    def calculate(self, word_sentiment_dict):
+    def calculate(self, words, word_sentiment_dict, weights):
         score = 0
         for sentiment_unit in self.sentiment_unit_list:
-            score = score + sentiment_unit.calculate(word_sentiment_dict)
+            score = score + sentiment_unit.calculate(words, word_sentiment_dict, weights)
         return score

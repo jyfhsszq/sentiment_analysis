@@ -23,6 +23,16 @@ def find_word_sentiment_dict():
             word_sentiment_dict[word_sentiment_obj.word] = word_sentiment_obj
     return word_sentiment_dict
 
+def find_word_weight_dict():
+    csv_reader = csv.reader(open("weight/weights.txt"))
+    word_weight_dict = {}
+
+    for i, row in enumerate(csv_reader):
+        if i > 0:
+            word_weight_dict[row[0]] = row[1]
+    return word_weight_dict
+
+
 
 def word_tokenize():
     word_sentiment_dict = find_word_sentiment_dict
@@ -46,7 +56,7 @@ def word_tokenize():
     # print nltk.help.upenn_tagset('RB')
 
 
-def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
+def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict):
     print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
     print sentence
     #words = nltk.word_tokenize(sentence)
@@ -82,10 +92,11 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp):
         nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
 
 
-    return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict)
+    return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict, word_weight_dict)
 
 
 def review_analyze():
+    word_weight_dict = find_word_weight_dict()
     word_sentiment_dict = find_word_sentiment_dict()
     # eng_parser = StanfordParser(model_path=u'edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz')
     standford_nlp = StanfordCoreNLP(r'/Users/pauljing/virtualenv_nltk/standford_lib/stanford-corenlp-full-2018-10-05',
@@ -100,7 +111,7 @@ def review_analyze():
         review_score = 0
         sentences = tokenizer.tokenize(line)
         for sentence in sentences:
-            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp)
+            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict)
             print 'sentence_core: %s' % sentence_core
             review_score = review_score + sentence_core
         print 'review_score: %s' % review_score
