@@ -4,13 +4,10 @@
 import nltk
 import csv
 import json
-from nltk.parse.stanford import StanfordParser
 from stanfordcorenlp import StanfordCoreNLP
 from word_sentiment import WordSentiment,WordScore,SentimentUnit, SentenceScore
 from tree import Tree
 from nsubj_parser import NsubjParser
-
-from nltk.corpus import opinion_lexicon
 
 
 def find_word_sentiment_dict():
@@ -23,15 +20,23 @@ def find_word_sentiment_dict():
             word_sentiment_dict[word_sentiment_obj.word] = word_sentiment_obj
     return word_sentiment_dict
 
+
+def find_negative_word_dict():
+    csv_reader = csv.reader(open("lexicons/negative_words.csv"))
+    negative_word_dict = {}
+
+    for i, row in enumerate(csv_reader):
+        negative_word_dict[row[0]] = row[0]
+    return negative_word_dict
+
+
 def find_word_weight_dict():
     csv_reader = csv.reader(open("weight/weights.txt"))
     word_weight_dict = {}
 
     for i, row in enumerate(csv_reader):
-        if i > 0:
-            word_weight_dict[row[0]] = row[1]
+        word_weight_dict[row[0]] = float(row[2])
     return word_weight_dict
-
 
 
 def word_tokenize():
@@ -56,7 +61,7 @@ def word_tokenize():
     # print nltk.help.upenn_tagset('RB')
 
 
-def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict):
+def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict):
     print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
     print sentence
     #words = nltk.word_tokenize(sentence)
@@ -91,13 +96,13 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_d
         nsubjParser = NsubjParser(tree, words, tags)
         nsubjParser.parse(sub_tree[0], start, end, sentiment_unit_list)
 
-
-    return SentenceScore(sentiment_unit_list).calculate(word_sentiment_dict, word_weight_dict)
+    return SentenceScore(sentiment_unit_list).calculate(words, word_sentiment_dict, word_weight_dict, negative_word_dict)
 
 
 def review_analyze():
     word_weight_dict = find_word_weight_dict()
     word_sentiment_dict = find_word_sentiment_dict()
+    negative_word_dict = find_negative_word_dict()
     # eng_parser = StanfordParser(model_path=u'edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz')
     standford_nlp = StanfordCoreNLP(r'/Users/pauljing/virtualenv_nltk/standford_lib/stanford-corenlp-full-2018-10-05',
                                     lang='en')
@@ -111,7 +116,7 @@ def review_analyze():
         review_score = 0
         sentences = tokenizer.tokenize(line)
         for sentence in sentences:
-            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict)
+            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict)
             print 'sentence_core: %s' % sentence_core
             review_score = review_score + sentence_core
         print 'review_score: %s' % review_score
@@ -142,6 +147,7 @@ def build_sentiment_unit(amod_relation, words, dependency_list):
     adv_list = find_adv_list(amod_relation[2], words, dependency_list)
     return SentimentUnit('', dependent, adv_list)
 
+
 def remove_dup_nsubj(raw_nsubj_list):
     dict = {}
     for raw_nsubj in raw_nsubj_list:
@@ -158,5 +164,6 @@ def remove_dup_nsubj(raw_nsubj_list):
             dict[gov] = (old_count + 1, distance)
 
     return [(x, y, z) for (x, y, z) in raw_nsubj_list if (y - z) is dict[y][1]]
+
 
 if __name__ == '__main__': review_analyze()

@@ -54,7 +54,7 @@ class NsubjParser(object):
 
         adj_node = self.tree.nodes[adj]
         if Tree.CHILDREN_KEY not in adj_node:
-            result.append(SentimentUnit(adj - 1, -1, -1))
+            result.append(SentimentUnit(adj - 1, -1, []))
             return
 
         children = adj_node[Tree.CHILDREN_KEY]
@@ -68,7 +68,7 @@ class NsubjParser(object):
             if self.is_adj(id):
                 self.parse_adj_as_core(id, start, end, result)
 
-        result.append(SentimentUnit(adj - 1, '', adv_list))
+        result.append(SentimentUnit(adj - 1, -1, adv_list))
 
 
     def parse_adj_adv(self, ad, start, end, ad_result=[]):
@@ -106,6 +106,10 @@ class NsubjParser(object):
 
             if self.is_verb(id) and child[Tree.RELATION_KEY] in ['acl']:
                 self.parse_verb(id, start, end, result)
+
+            if self.is_adv(id):
+                adv_list.append(id - 1)
+                self.parse_adj_adv(id, start, end, adv_list)
 
         if adj > 0:
             result.append(SentimentUnit(n-1, adj-1, adv_list))

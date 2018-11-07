@@ -54,8 +54,8 @@ class SentimentUnit:
     :param core. 名词或者动词
     '''
     def __init__(self, core, adj, advs):
-        self.core = str(core).lower()
-        self.adj = str(adj).lower()
+        self.core = core
+        self.adj = adj
         self.advs = advs
 
     '''
@@ -66,32 +66,36 @@ class SentimentUnit:
     公式：unit_sentiment = [S(word) + S(adj)] * feature_word_weight * Sum(E(adv)/distance)
     如果被修饰词没有情感度，就取形容词的情感度。如果形容词也没有情感度，则这个情感单元的情感度为零。
     '''
-    def calculate(self, words, word_sentiment_dict, weights):
+    def calculate(self, words, word_sentiment_dict, weights, negative_word_dict):
         core_word = str(words[self.core]).lower()
         core_weight = 1
         if core_word and core_word in weights:
             core_weight = weights[core_word]
-            print "core_weight" + core_weight
 
         adj_word = str(words[self.adj]).lower()
 
         core_word_sentiment = word_sentiment_dict.get(core_word)
         adj_word_sentiment = word_sentiment_dict.get(adj_word)
+
+        core_position = self.core
         score = 0
         if core_word_sentiment:
             score = score + core_word_sentiment.score_increment() * core_weight
 
         if adj_word_sentiment:
+            core_position = self.adj
             score = score + adj_word_sentiment.score_increment()
-
-        if score is 0:
-            return 0
 
         for adv in self.advs:
             adv_word = str(words[adv]).lower()
+            if adv_word in negative_word_dict:
+                score = score * -1
             adv_sentiment = word_sentiment_dict.get(adv_word)
             if adv_sentiment:
-                score = score * adv_sentiment.enhancement_rate()
+                if score is 0:
+                    score = score + adv_sentiment.score_increment()
+                else:
+                    score = score * adv_sentiment.enhancement_rate() / (adv - core_position)
 
         return score
 
@@ -100,8 +104,8 @@ class SentenceScore:
     def __init__(self, sentiment_unit_list=[]):
         self.sentiment_unit_list = sentiment_unit_list
 
-    def calculate(self, words, word_sentiment_dict, weights):
+    def calculate(self, words, word_sentiment_dict, weights, negative_word_dict):
         score = 0
         for sentiment_unit in self.sentiment_unit_list:
-            score = score + sentiment_unit.calculate(words, word_sentiment_dict, weights)
+            score = score + sentiment_unit.calculate(words, word_sentiment_dict, weights, negative_word_dict)
         return score
