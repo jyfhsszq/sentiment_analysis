@@ -95,7 +95,10 @@ class SentimentUnit:
                 if score is 0:
                     score = score + adv_sentiment.score_increment()
                 else:
-                    score = score * adv_sentiment.enhancement_rate() / (adv - core_position)
+                    dist = abs(adv - core_position)
+                    if dist is 0:
+                        dist = 1
+                    score = score * adv_sentiment.enhancement_rate() / dist
 
         return score
 

@@ -8,7 +8,8 @@ from stanfordcorenlp import StanfordCoreNLP
 from word_sentiment import WordSentiment,WordScore,SentimentUnit, SentenceScore
 from tree import Tree
 from nsubj_parser import NsubjParser
-
+import MySQLdb
+import nltk.tokenize as tk
 
 def find_word_sentiment_dict():
     csv_reader = csv.reader(open("lexicons/lexicons.csv"))
@@ -62,8 +63,8 @@ def word_tokenize():
 
 
 def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict):
-    print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
-    print sentence
+    #print "    ~~~~~~~~~~~~~~~~~~~~~~~~Start to Analyze~~~~~~~~~~~~~~~~~~~~~~~~"
+    #print sentence
     #words = nltk.word_tokenize(sentence)
 
     # part-of-speech tagging
@@ -74,7 +75,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_d
     words = [tag[0] for tag in tags]
 
     dependency_list = standford_nlp.dependency_parse(sentence)
-    print dependency_list
+    #print dependency_list
     tree = Tree(dependency_list)
     raw_nsubj_list = [(x, y, z) for (x, y, z) in dependency_list if cmp(x, 'nsubj') is 0]
     nsubj_list = remove_dup_nsubj(raw_nsubj_list)
@@ -86,7 +87,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_d
     if nsubj_list:
         # [(2, 1, 2), (12, 3, 13)]
         sub_tree_list = tree.find_sub_tree_by_nsubj(nsubj_list)
-        print sub_tree_list
+        #print sub_tree_list
     else:
         sub_tree_list = [(dependency_list[0][2], 1, Tree.MAX_INT)]
 
@@ -108,18 +109,58 @@ def review_analyze():
                                     lang='en')
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
-    #f = open('data/dp_examples.txt')
-    f = open('data/one.txt')
+    connect = MySQLdb.connect(host="localhost", user="summer", passwd="cndnj!@#", db="reviews", port=3306,
+                              charset="utf8")
+    cursor = connect.cursor()
+    deleteAll(cursor)
+
+    f = open('data/train.ft.txt')
+    #f = open('data/one.txt')
     lines = f.readlines()
+    line_num = 0
     for line in lines:
+        line_num = line_num + 1
         print "####################  Start to Analyze  ####################"
         review_score = 0
-        sentences = tokenizer.tokenize(line)
+        try:
+            sentences = tokenizer.tokenize(line)
+        except UnicodeEncodeError as e:
+            print "UnicodeEncodeError1"
+            continue
+        except UnicodeDecodeError as e:
+            print "UnicodeDecodeError1"
+            continue
+
         for sentence in sentences:
-            sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict)
-            print 'sentence_core: %s' % sentence_core
-            review_score = review_score + sentence_core
-        print 'review_score: %s' % review_score
+            try:
+                sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict)
+                # print 'sentence_core: %s' % sentence_core
+                review_score = review_score + sentence_core
+            except RuntimeError as e:
+                print "RuntimeError"
+            except UnicodeEncodeError as e:
+                print "UnicodeEncodeError"
+            except UnicodeDecodeError as e:
+                print "UnicodeDecodeError"
+
+        insert(cursor, line_num, review_score)
+        if line_num % 10000 is 0:
+            connect.commit()
+        print '%s review_score: %s' % (line_num, review_score)
+
+    connect.commit()
+    cursor.close()
+    connect.close()
+
+
+
+def insert(cursor, line_number, sentiment):
+    cursor.execute("insert into sentiments (lineNumber, sentiment) values (%s, %s)", (line_number, sentiment))
+
+
+def deleteAll(cursor):
+    cursor.execute("truncate sentiments")
+
 
 def find_dependent(words, relation):
     #governor = words[dependency_relation[1] - 1]
