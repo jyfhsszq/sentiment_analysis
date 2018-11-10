@@ -25,3 +25,6 @@ CREATE TABLE `train` (
     PRIMARY KEY (`id`),
     KEY `train_idx01` (`id`)
 ) ENGINE=INNODB CHARSET=utf8 COMMENT='train data sentiment';
+
+ALTER table train add INDEX `train_idx02` (`lineNumber`)
+ALTER table sentiments_1 add INDEX `sentiments_1_idx02` (`lineNumber`)

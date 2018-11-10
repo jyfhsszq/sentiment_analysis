@@ -9,7 +9,8 @@ from word_sentiment import WordSentiment,WordScore,SentimentUnit, SentenceScore
 from tree import Tree
 from nsubj_parser import NsubjParser
 import MySQLdb
-import nltk.tokenize as tk
+import math
+import threading
 
 def find_word_sentiment_dict():
     csv_reader = csv.reader(open("lexicons/lexicons.csv"))
@@ -100,7 +101,7 @@ def sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_d
     return SentenceScore(sentiment_unit_list).calculate(words, word_sentiment_dict, word_weight_dict, negative_word_dict)
 
 
-def review_analyze():
+def review_analyze(start, end):
     word_weight_dict = find_word_weight_dict()
     word_sentiment_dict = find_word_sentiment_dict()
     negative_word_dict = find_negative_word_dict()
@@ -120,33 +121,34 @@ def review_analyze():
     line_num = 0
     for line in lines:
         line_num = line_num + 1
-        print "####################  Start to Analyze  ####################"
-        review_score = 0
-        try:
-            sentences = tokenizer.tokenize(line)
-        except UnicodeEncodeError as e:
-            print "UnicodeEncodeError1"
-            continue
-        except UnicodeDecodeError as e:
-            print "UnicodeDecodeError1"
-            continue
-
-        for sentence in sentences:
+        if end >= line_num >= start:
+            print "####################  Start to Analyze  ####################"
+            review_score = 0
             try:
-                sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict)
-                # print 'sentence_core: %s' % sentence_core
-                review_score = review_score + sentence_core
-            except RuntimeError as e:
-                print "RuntimeError"
+                sentences = tokenizer.tokenize(line)
             except UnicodeEncodeError as e:
-                print "UnicodeEncodeError"
+                print "UnicodeEncodeError1"
+                continue
             except UnicodeDecodeError as e:
-                print "UnicodeDecodeError"
+                print "UnicodeDecodeError1"
+                continue
 
-        insert(cursor, line_num, review_score)
-        if line_num % 10000 is 0:
-            connect.commit()
-        print '%s review_score: %s' % (line_num, review_score)
+            for sentence in sentences:
+                try:
+                    sentence_core = sentence_analyze(sentence, word_sentiment_dict, standford_nlp, word_weight_dict, negative_word_dict)
+                    # print 'sentence_core: %s' % sentence_core
+                    review_score = review_score + sentence_core
+                except RuntimeError as e:
+                    print "RuntimeError"
+                except UnicodeEncodeError as e:
+                    print "UnicodeEncodeError"
+                except UnicodeDecodeError as e:
+                    print "UnicodeDecodeError"
+
+            insert(cursor, line_num, review_score)
+            if line_num % 10000 is 0:
+                connect.commit()
+            print '%s review_score: %s' % (line_num, review_score)
 
     connect.commit()
     cursor.close()
@@ -155,11 +157,11 @@ def review_analyze():
 
 
 def insert(cursor, line_number, sentiment):
-    cursor.execute("insert into sentiments (lineNumber, sentiment) values (%s, %s)", (line_number, sentiment))
+    cursor.execute("insert into sentiments_1 (lineNumber, sentiment) values (%s, %s)", (line_number, sentiment))
 
 
 def deleteAll(cursor):
-    cursor.execute("truncate sentiments")
+    cursor.execute("truncate sentiments_1")
 
 
 def find_dependent(words, relation):
@@ -207,4 +209,20 @@ def remove_dup_nsubj(raw_nsubj_list):
     return [(x, y, z) for (x, y, z) in raw_nsubj_list if (y - z) is dict[y][1]]
 
 
-if __name__ == '__main__': review_analyze()
+if __name__ == '__main__':
+    #review_analyze()
+    threads = []
+    total = 1820772
+    chunk = 200000
+    thread_count = int(math.ceil(total / chunk)) + 1
+    for i in range(0, thread_count):
+        startIndex = i * chunk + 1
+        endIndex = (i + 1) * chunk
+        new_thread = threading.Thread(target=review_analyze, args=(startIndex, endIndex))
+        threads.append(new_thread)
+
+    for t in threads:
+        # t.setDaemon(True)
+        t.start()
+
+    t.join()
