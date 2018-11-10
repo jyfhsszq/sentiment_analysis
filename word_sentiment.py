@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # coding=utf-8
+#https://github.com/beefoo/text-analysis
 
 class WordSentiment:
     def __init__(self, word, emotion, color, orientation, sentiment, subjectivity, source):
