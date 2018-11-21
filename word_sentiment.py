@@ -74,10 +74,8 @@ class SentimentUnit:
             core_weight = weights[core_word]
 
         adj_word = str(words[self.adj]).lower()
-
         core_word_sentiment = word_sentiment_dict.get(core_word)
         adj_word_sentiment = word_sentiment_dict.get(adj_word)
-
         core_position = self.core
         score = 0
         if core_word_sentiment:
